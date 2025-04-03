@@ -12,7 +12,12 @@ katrain.log = print
 katrain.config("engine")[
     "model"
 ] = "/Users/peter/.katrain/g170-b30c320x2-s4824661760-d1229536699.bin.gz"
+katrain.config("engine")["fast_visits"] = 1
+katrain.config("engine")["max_visits"] = 1
 print(katrain.config("engine"))
 engine = KataGoEngine(katrain, katrain.config("engine"))
 game = Game(katrain, engine, analyze_fast=True)
-generate_ai_move(game, AI_WEIGHTED, {"lower_bound": 0, "weaken_fac": 1})
+for i in range(10):
+    generate_ai_move(
+        game, AI_WEIGHTED, {"lower_bound": 0, "weaken_fac": 1, "pick_override": 1}
+    )
