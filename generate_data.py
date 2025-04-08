@@ -1,7 +1,9 @@
 from __future__ import annotations
 
+import json
 import os
 import random
+import sys
 import time
 from functools import lru_cache
 from typing import TYPE_CHECKING, Sequence, TypedDict
@@ -110,7 +112,6 @@ def setup() -> tuple[KaTrainGui, KataGoEngine]:
     katrain.config("engine")["model"] = model_path
     katrain.config("engine")["fast_visits"] = 1
     katrain.config("engine")["max_visits"] = 1
-    print(katrain.config("engine"))
     engine = KataGoEngine(katrain, katrain.config("engine"))
     return katrain, engine
 
@@ -121,12 +122,12 @@ def generate_example(katrain: KaTrainGui, engine: KataGoEngine) -> Example:
     from katrain.core.game import Game
 
     game = Game(katrain, engine, analyze_fast=True)
-    for i in tqdm.tqdm(range(random.randint(0, 10))):
+    for i in range(random.randint(0, 100)):
         generate_ai_move(
             game, AI_WEIGHTED, {"lower_bound": 0, "weaken_fac": 1, "pick_override": 1}
         )
     while not game.current_node.policy:
-        time.sleep(0.01)
+        time.sleep(0.001)
     policy_dict = {
         move.gtp(): policy
         for policy, move in game.current_node.policy_ranking
@@ -138,9 +139,24 @@ def generate_example(katrain: KaTrainGui, engine: KataGoEngine) -> Example:
     }
 
 
+def parse_args() -> tuple[int, str]:
+    if len(sys.argv) < 3:
+        raise ValueError
+    num_examples = int(sys.argv[1])
+    dest_filename = sys.argv[2]
+    assert dest_filename.endswith(".jsonl")
+    return num_examples, dest_filename
+
+
 def main():
+    try:
+        num_examples, dest_filename = parse_args()
+    except (AssertionError, ValueError):
+        print("Usage: python generate_data.py <num_examples> <dest_filename.jsonl>")
     katrain, engine = setup()
-    print(generate_example(katrain, engine))
+    with open(dest_filename, "a") as f:
+        for i in tqdm.tqdm(range(num_examples), file=sys.stdout):
+            f.write(json.dumps(generate_example(katrain, engine)) + "\n")
 
 
 if __name__ == "__main__":
