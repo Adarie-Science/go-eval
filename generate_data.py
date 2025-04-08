@@ -1,17 +1,57 @@
+from __future__ import annotations
+
+import os
 import random
 import time
 from functools import lru_cache
-from typing import Sequence, TypedDict
+from typing import TYPE_CHECKING, Sequence, TypedDict
 from unittest.mock import Mock
 
+import requests
 import tqdm
-from katrain.__main__ import KaTrainGui
-from katrain.core.ai import generate_ai_move
-from katrain.core.constants import AI_WEIGHTED
-from katrain.core.engine import KataGoEngine
-from katrain.core.game import Game
+
+if TYPE_CHECKING:
+    from katrain.__main__ import KaTrainGui
+    from katrain.core.engine import KataGoEngine
+    from katrain.core.game import Game
+
+KATAGO_MODEL = "kata1-b28c512nbt-s8536703232-d4684449769.bin.gz"
+URL_BASE = "https://media.katagotraining.org/uploaded/networks/models/kata1/"
+
+MODELS_DIR = "katago_files"
 
 TURN_STRINGS = {"B": "Black (X) to play.", "W": "White (O) to play."}
+
+
+def download_model(url, output_dir=MODELS_DIR):
+    os.makedirs(output_dir, exist_ok=True)
+    local_filename = os.path.join(output_dir, url.split("/")[-1])
+
+    with requests.get(url, stream=True) as r:
+        r.raise_for_status()
+        total = int(r.headers.get("content-length", 0))
+        with open(local_filename, "wb") as f, tqdm.tqdm(
+            desc=local_filename,
+            total=total,
+            unit="B",
+            unit_scale=True,
+            unit_divisor=1024,
+            leave=True,
+        ) as bar:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+                bar.update(len(chunk))
+
+    print(f"Downloaded to: {local_filename}")
+    return local_filename
+
+
+def get_model() -> str:
+    """Returns path to model file."""
+    dest = os.path.join(MODELS_DIR, KATAGO_MODEL)
+    if os.path.exists(dest):
+        return dest
+    return download_model(URL_BASE + KATAGO_MODEL)
 
 
 class Example(TypedDict):
@@ -60,11 +100,14 @@ def get_prompt(game: Game):
 
 
 def setup() -> tuple[KaTrainGui, KataGoEngine]:
+    model_path = get_model()
+
+    from katrain.__main__ import KaTrainGui
+    from katrain.core.engine import KataGoEngine
+
     katrain = KaTrainGui()
     katrain.log = Mock()
-    katrain.config("engine")[
-        "model"
-    ] = "/Users/peter/.katrain/g170-b30c320x2-s4824661760-d1229536699.bin.gz"
+    katrain.config("engine")["model"] = model_path
     katrain.config("engine")["fast_visits"] = 1
     katrain.config("engine")["max_visits"] = 1
     print(katrain.config("engine"))
@@ -73,6 +116,10 @@ def setup() -> tuple[KaTrainGui, KataGoEngine]:
 
 
 def generate_example(katrain: KaTrainGui, engine: KataGoEngine) -> Example:
+    from katrain.core.ai import generate_ai_move
+    from katrain.core.constants import AI_WEIGHTED
+    from katrain.core.game import Game
+
     game = Game(katrain, engine, analyze_fast=True)
     for i in tqdm.tqdm(range(random.randint(0, 10))):
         generate_ai_move(
