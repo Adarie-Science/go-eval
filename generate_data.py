@@ -47,10 +47,10 @@ def pretty_board(game: Game) -> str:
 
 
 def get_prompt(game: Game):
-    top_prompt = "You are playing a game of Go. This is the current position. X represents a black stone and O represents a white stone."
+    top_prompt = "This is a position from a game of Go. X represents a black stone and O represents a white stone."
     board_string = pretty_board(game)
-    turn_string = TURN_STRINGS[game.current_node.player]
-    bottom_prompt = "Please enter the coordinates of your move."
+    turn_string = TURN_STRINGS[game.current_node.next_player]
+    bottom_prompt = "Please try to find the best move. Enter the coordinates in GTP format (letter followed by number).\nYour move:"
     return "\n".join([top_prompt, board_string, turn_string, bottom_prompt])
 
 
@@ -69,7 +69,7 @@ def setup() -> tuple[KaTrainGui, KataGoEngine]:
 
 def generate_example(katrain: KaTrainGui, engine: KataGoEngine):
     game = Game(katrain, engine, analyze_fast=True)
-    for i in tqdm.tqdm(range(random.randint(0, 100))):
+    for i in tqdm.tqdm(range(random.randint(0, 10))):
         generate_ai_move(
             game, AI_WEIGHTED, {"lower_bound": 0, "weaken_fac": 1, "pick_override": 1}
         )
@@ -78,7 +78,12 @@ def generate_example(katrain: KaTrainGui, engine: KataGoEngine):
     print()
     while not game.current_node.policy:
         time.sleep(0.01)
-    print(game.current_node.policy)
+    policy_dict = {
+        move.gtp(): policy
+        for policy, move in game.current_node.policy_ranking
+        if policy >= 0
+    }
+    print(policy_dict)
 
 
 def main():
