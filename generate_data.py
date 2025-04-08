@@ -1,8 +1,10 @@
+import random
 import time
 from functools import lru_cache
 from typing import Sequence
 from unittest.mock import Mock
 
+import tqdm
 from katrain.__main__ import KaTrainGui
 from katrain.core.ai import generate_ai_move
 from katrain.core.constants import AI_WEIGHTED
@@ -42,9 +44,16 @@ def pretty_board(game: Game) -> str:
     return "\n".join(lines)
 
 
+def get_prompt(game: Game):
+    moves_string = str(game.current_node.moves)
+    board_string = pretty_board(game)
+    turn_string = f"{game.current_node.player} to play."
+    return "\n".join([moves_string, board_string, turn_string])
+
+
 def setup() -> tuple[KaTrainGui, KataGoEngine]:
     katrain = KaTrainGui()
-    katrain.log = print
+    katrain.log = Mock()
     katrain.config("engine")[
         "model"
     ] = "/Users/peter/.katrain/g170-b30c320x2-s4824661760-d1229536699.bin.gz"
@@ -57,12 +66,16 @@ def setup() -> tuple[KaTrainGui, KataGoEngine]:
 
 def generate_example(katrain: KaTrainGui, engine: KataGoEngine):
     game = Game(katrain, engine, analyze_fast=True)
-    for i in range(10):
-        move = generate_ai_move(
+    for i in tqdm.tqdm(range(random.randint(0, 100))):
+        generate_ai_move(
             game, AI_WEIGHTED, {"lower_bound": 0, "weaken_fac": 1, "pick_override": 1}
         )
-        print("MOVE", move)
-    print(pretty_board(game))
+    print()
+    print(get_prompt(game))
+    print()
+    while not game.current_node.policy:
+        time.sleep(0.01)
+    print(game.current_node.policy)
 
 
 def main():
