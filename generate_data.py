@@ -11,6 +11,8 @@ from katrain.core.constants import AI_WEIGHTED
 from katrain.core.engine import KataGoEngine
 from katrain.core.game import Game
 
+TURN_STRINGS = {"B": "Black (X) to play.", "W": "White (O) to play."}
+
 
 @lru_cache()
 def star_points(size: int) -> Sequence[tuple[int, int]]:
@@ -45,10 +47,11 @@ def pretty_board(game: Game) -> str:
 
 
 def get_prompt(game: Game):
-    moves_string = str(game.current_node.moves)
+    top_prompt = "You are playing a game of Go. This is the current position. X represents a black stone and O represents a white stone."
     board_string = pretty_board(game)
-    turn_string = f"{game.current_node.player} to play."
-    return "\n".join([moves_string, board_string, turn_string])
+    turn_string = TURN_STRINGS[game.current_node.player]
+    bottom_prompt = "Please enter the coordinates of your move."
+    return "\n".join([top_prompt, board_string, turn_string, bottom_prompt])
 
 
 def setup() -> tuple[KaTrainGui, KataGoEngine]:
