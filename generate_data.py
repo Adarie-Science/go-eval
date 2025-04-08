@@ -1,7 +1,7 @@
 import random
 import time
 from functools import lru_cache
-from typing import Sequence
+from typing import Sequence, TypedDict
 from unittest.mock import Mock
 
 import tqdm
@@ -12,6 +12,11 @@ from katrain.core.engine import KataGoEngine
 from katrain.core.game import Game
 
 TURN_STRINGS = {"B": "Black (X) to play.", "W": "White (O) to play."}
+
+
+class Example(TypedDict):
+    prompt: str
+    policy: dict[str, float]
 
 
 @lru_cache()
@@ -67,15 +72,12 @@ def setup() -> tuple[KaTrainGui, KataGoEngine]:
     return katrain, engine
 
 
-def generate_example(katrain: KaTrainGui, engine: KataGoEngine):
+def generate_example(katrain: KaTrainGui, engine: KataGoEngine) -> Example:
     game = Game(katrain, engine, analyze_fast=True)
     for i in tqdm.tqdm(range(random.randint(0, 10))):
         generate_ai_move(
             game, AI_WEIGHTED, {"lower_bound": 0, "weaken_fac": 1, "pick_override": 1}
         )
-    print()
-    print(get_prompt(game))
-    print()
     while not game.current_node.policy:
         time.sleep(0.01)
     policy_dict = {
@@ -83,12 +85,15 @@ def generate_example(katrain: KaTrainGui, engine: KataGoEngine):
         for policy, move in game.current_node.policy_ranking
         if policy >= 0
     }
-    print(policy_dict)
+    return {
+        "prompt": get_prompt(game),
+        "policy": policy_dict,
+    }
 
 
 def main():
     katrain, engine = setup()
-    generate_example(katrain, engine)
+    print(generate_example(katrain, engine))
 
 
 if __name__ == "__main__":
