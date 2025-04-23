@@ -17,9 +17,9 @@ def score_p(p: float) -> float:
 
 
 def attempt_problem(problem) -> tuple[float, float]:
+    print()
     prompt, policy = problem["prompts"]["ansi"], problem["policy"]
-    print(prompt)
-    guess = input().strip().upper()
+    guess = input(prompt + " ").strip().upper()
     if guess not in policy:
         print("Invalid move: -1 point.")
         return -1
@@ -32,7 +32,7 @@ def attempt_problem(problem) -> tuple[float, float]:
         print(
             f"Best move was {best_move}. Score: {score:.3f} out of possible {best_score:.3f}"
         )
-    return best_score, best_score
+    return score, best_score
 
 
 def main():
