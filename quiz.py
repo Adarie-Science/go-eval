@@ -17,7 +17,7 @@ def score_p(p: float) -> float:
 
 
 def attempt_problem(problem) -> tuple[float, float]:
-    prompt, policy = problem["prompt"], problem["policy"]
+    prompt, policy = problem["prompts"]["ansi"], problem["policy"]
     print(prompt)
     guess = input().strip().upper()
     if guess not in policy:

@@ -68,7 +68,7 @@ def star_points(size: int) -> Sequence[tuple[int, int]]:
     return {(x, y) for x in range(size) for y in range(size) if {x, y} <= s}
 
 
-def pretty_board(game: Game) -> str:
+def ascii_board(game: Game, black_stone="X", white_stone="O") -> str:
     assert game.board_size[0] == game.board_size[1]  # TODO: non-square boards
     size = game.board_size[0]
     sp = star_points(size)
@@ -77,7 +77,7 @@ def pretty_board(game: Game) -> str:
     cells = [["," if (x, y) in sp else "." for x in range(size)] for y in range(size)]
 
     for stone in game.stones:
-        color = "X" if stone.player == "B" else "O"
+        color = black_stone if stone.player == "B" else white_stone
         x, y = stone.coords
         cells[y][x] = color
 
@@ -93,9 +93,23 @@ def pretty_board(game: Game) -> str:
     return "\n".join(lines)
 
 
-def get_prompt(game: Game):
+def ansi_board(game: Game) -> str:
+    return ascii_board(
+        game, black_stone="\033[90mX\033[0m", white_stone="\033[1;37mO\033[0m"
+    )
+
+
+def ascii_prompt(game: Game):
     top_prompt = "This is a position from a game of Go. X represents a black stone and O represents a white stone."
-    board_string = pretty_board(game)
+    board_string = ascii_board(game)
+    turn_string = TURN_STRINGS[game.current_node.next_player]
+    bottom_prompt = "Please try to find the best move. Enter the coordinates in GTP format (letter followed by number).\nYour move:"
+    return "\n".join([top_prompt, board_string, turn_string, bottom_prompt])
+
+
+def ansi_prompt(game: Game):
+    top_prompt = "This is a position from a game of Go. X represents a black stone and O represents a white stone."
+    board_string = ansi_board(game)
     turn_string = TURN_STRINGS[game.current_node.next_player]
     bottom_prompt = "Please try to find the best move. Enter the coordinates in GTP format (letter followed by number).\nYour move:"
     return "\n".join([top_prompt, board_string, turn_string, bottom_prompt])
@@ -134,7 +148,10 @@ def generate_example(katrain: KaTrainGui, engine: KataGoEngine) -> Example:
         if policy >= 0
     }
     return {
-        "prompt": get_prompt(game),
+        "prompts": {
+            "ascii": ascii_prompt(game),
+            "ansi": ansi_prompt(game),
+        },
         "policy": policy_dict,
     }
 
