@@ -115,6 +115,19 @@ def ansi_prompt(game: Game):
     return "\n".join([top_prompt, board_string, turn_string, bottom_prompt])
 
 
+def gtp_prompt(game: Game):
+    top_prompt = "This is a position from a game of Go. B indicates a move by black and W indicates a move by white."
+    moves = []
+    node = game.current_node
+    while node.move:
+        moves.append(f"{node.move.player} {node.move.gtp()}")
+        node = node.parent
+    moves.reverse()
+    turn_string = TURN_STRINGS[game.current_node.next_player]
+    bottom_prompt = "Please try to find the best move. Enter the coordinates in GTP format (letter followed by number).\nYour move:"
+    return "\n".join([top_prompt, *moves, turn_string, bottom_prompt])
+
+
 def setup() -> tuple[KaTrainGui, KataGoEngine]:
     model_path = get_model()
 
@@ -151,6 +164,7 @@ def generate_example(katrain: KaTrainGui, engine: KataGoEngine) -> Example:
         "prompts": {
             "ascii": ascii_prompt(game),
             "ansi": ansi_prompt(game),
+            "gtp": gtp_prompt(game),
         },
         "policy": policy_dict,
     }
