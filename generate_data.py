@@ -23,6 +23,7 @@ URL_BASE = "https://media.katagotraining.org/uploaded/networks/models/kata1/"
 MODELS_DIR = "katago_files"
 
 TURN_STRINGS = {"B": "Black (X) to play.", "W": "White (O) to play."}
+TURN_STRINGS_GTP = {"B": "Black (B) to play.", "W": "White (W) to play."}
 
 
 def download_model(url, output_dir=MODELS_DIR):
@@ -123,7 +124,7 @@ def gtp_prompt(game: Game):
         moves.append(f"{node.move.player} {node.move.gtp()}")
         node = node.parent
     moves.reverse()
-    turn_string = TURN_STRINGS[game.current_node.next_player]
+    turn_string = TURN_STRINGS_GTP[game.current_node.next_player]
     bottom_prompt = "Please try to find the best move. Enter the coordinates in GTP format (letter followed by number).\nYour move:"
     return "\n".join([top_prompt, *moves, turn_string, bottom_prompt])
 
